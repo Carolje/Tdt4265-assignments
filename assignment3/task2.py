@@ -31,35 +31,38 @@ class ExampleModel(nn.Module):
                 stride=1,
                 padding=2
             ),
+            nn.ReLU(),
             nn.MaxPool2d(
                 kernel_size=2,
                 stride=2
             ),
             nn.Conv2d(
-                in_channels=32,
+                in_channels=num_filters,
                 out_channels=num_filters*2,
                 kernel_size=5,
                 stride=1,
                 padding=2
             ),
+            nn.ReLU(),
             nn.MaxPool2d(
                 kernel_size=2,
                 stride=2
             ),
             nn.Conv2d(
-                in_channels=64,
+                in_channels=num_filters*2,
                 out_channels=num_filters*4,
                 kernel_size=5,
                 stride=1,
                 padding=2
             ),
+            nn.ReLU(),
             nn.MaxPool2d(
                 kernel_size=2,
                 stride=2
             )
         )
         # The output of feature_extractor will be [batch_size, num_filters, 16, 16]
-        self.num_output_features = 4*4*128
+        self.num_output_features = 4*4*num_filters*4
         # Initialize our last fully connected layer
         # Inputs all extracted features from the convolutional layers
         # Outputs num_classes predictions, 1 for each class.
