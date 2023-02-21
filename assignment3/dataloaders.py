@@ -26,7 +26,7 @@ def load_cifar10(batch_size: int, validation_fraction: float = 0.1
         transforms.ToTensor(),
         transforms.RandomHorizontalFlip(),
         transforms.RandomRotation(5),
-        transforms.RandomCrop(size=(32,32)),
+        #transforms.RandomCrop(size=(32,32)),
         transforms.Normalize(mean, std),
     ])
     transform_test = transforms.Compose([
