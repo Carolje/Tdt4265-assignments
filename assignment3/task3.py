@@ -2,6 +2,7 @@ import pathlib
 import matplotlib.pyplot as plt
 import utils
 from torch import nn
+import torchvision.transforms as tf
 from dataloaders import load_cifar10
 from trainer import Trainer
 from trainer import compute_loss_and_accuracy
@@ -24,6 +25,12 @@ class ExampleModel(nn.Module):
         self.num_classes = num_classes
         # Define the convolutional layers
         self.feature_extractor = nn.Sequential(
+            #tf.RandomHorizontalFlip(),
+            #tf.RandomRotation(5),#Guite good with 5 degrees, not so good with 15, bad with 90
+            #tf.ColorJitter(brightness=0.5,contrast=0.5,saturation=0.5,hue=0.5),
+            #tf.RandomCrop(size=(32,32)), #Does not do much?
+            #tf.RandomVerticalFlip(), not good
+            #tf.RandomGrayscale(), a little worse tha just horisontal
             nn.Conv2d(
                 in_channels=image_channels,
                 out_channels=num_filters,
