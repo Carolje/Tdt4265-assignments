@@ -88,5 +88,18 @@ class BaseTrainer:
                     val_history["loss"][global_step] = val_loss
                     val_history["accuracy"][global_step] = accuracy_val
                     # TODO: Implement early stopping (copy from last assignment)
+                    if global_step==0:
+                        best_loss=100
+                    if val_loss<best_loss:
+                        best_loss=val_loss
+                        best_ws = self.model.ws
+                        counter=0
+                    else:
+                        counter+=1
+                    if counter>=50:
+                        print(f'Early stopping after epoch no: {epoch}')
+                        self.model.ws=best_ws
+                        return train_history, val_history
+
                 global_step += 1
         return train_history, val_history

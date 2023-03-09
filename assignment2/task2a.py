@@ -14,6 +14,17 @@ def pre_process_images(X: np.ndarray):
     assert X.shape[1] == 784,\
         f"X.shape[1]: {X.shape[1]}, should be 784"
     # TODO implement this function (Task 2a)
+    if not( 'mean' and 'std' in globals()):
+        global mean 
+        global std
+        mean=np.mean(X)
+        std=np.std(X)
+        print(mean,std)
+    #Better way to do this, gor problems with global variables
+    X=(X-mean)/std
+    bias=np.ones((X.shape[0],1))
+    X=np.concatenate((bias,X),axis=1)
+    
     return X
 
 
@@ -28,7 +39,8 @@ def cross_entropy_loss(targets: np.ndarray, outputs: np.ndarray):
     assert targets.shape == outputs.shape,\
         f"Targets shape: {targets.shape}, outputs: {outputs.shape}"
     # TODO: Implement this function (copy from last assignment)
-    raise NotImplementedError
+    C=1/targets.shape[0]*np.sum(-1*targets*np.log(outputs+1e-10))
+    return C
 
 
 class SoftmaxModel:
@@ -43,7 +55,7 @@ class SoftmaxModel:
         # Always reset random seed before weight init to get comparable results.
         np.random.seed(1)
         # Define number of input nodes
-        self.I = None
+        self.I = 785
         self.use_improved_sigmoid = use_improved_sigmoid
         self.use_relu = use_relu
         self.use_improved_weight_init = use_improved_weight_init
@@ -59,7 +71,10 @@ class SoftmaxModel:
         for size in self.neurons_per_layer:
             w_shape = (prev, size)
             print("Initializing weight to shape:", w_shape)
-            w = np.zeros(w_shape)
+            if use_improved_weight_init:
+                w=np.random.normal(0,1/np.sqrt(prev),w_shape)
+            else:
+                w = np.random.uniform(-1,1,w_shape)
             self.ws.append(w)
             prev = size
         self.grads = [None for i in range(len(self.ws))]
@@ -74,7 +89,19 @@ class SoftmaxModel:
         # TODO implement this function (Task 2b)
         # HINT: For performing the backward pass, you can save intermediate activations in variables in the forward pass.
         # such as self.hidden_layer_output = ...
-        return None
+        self.hidden_layer_output=[]
+        self.z_hidden=[]
+        self.z_hidden.append(X@(self.ws[0]))
+        for i in range(len(self.neurons_per_layer)-1):
+            if self.use_improved_sigmoid:
+                self.hidden_layer_output.append(1.7159*np.tanh(2/3*self.z_hidden[i]))
+            elif self.use_relu:
+                self.hidden_layer_output.append(max(np.zeros_like(self.z_hidden[i]),self.z_hidden[i]))
+            else:
+                self.hidden_layer_output.append(1/(1+np.exp(-self.z_hidden[i])))
+            self.z_hidden.append(self.hidden_layer_output[i]@(self.ws[i+1]))
+        result=np.exp(self.z_hidden[-1]).T/(np.sum(np.exp(self.z_hidden[-1]),axis=1))
+        return result.T
 
     def backward(self, X: np.ndarray, outputs: np.ndarray,
                  targets: np.ndarray) -> None:
@@ -91,7 +118,29 @@ class SoftmaxModel:
             f"Output shape: {outputs.shape}, targets: {targets.shape}"
         # A list of gradients.
         # For example, self.grads[0] will be the gradient for the first hidden layer
-        self.grads = []
+        delta_k=-(targets-outputs)
+        delta_j=delta_k
+        self.grads[-1] = self.hidden_layer_output[-1].T@delta_j/X.shape[0]
+        
+        
+        for i in range(len(self.neurons_per_layer)-2,-1,-1):
+
+            if self.use_improved_sigmoid:
+                f_derivative=1.7159*2/3*1/np.cosh(2/3*self.z_hidden[i])**2
+            else:
+                f_derivative=self.hidden_layer_output[i]*(1-self.hidden_layer_output[i])
+
+            delta_j=f_derivative*(delta_j@(self.ws[i+1].T))
+            if i==0:
+                self.grads[i] = X.T@(delta_j)/(X.shape[0])
+            else:
+                self.grads[i] = self.hidden_layer_output[i-1].T@(delta_j)/(X.shape[0]*10)
+
+            # print("delta_j",np.shape(delta_j))
+            # print("ws",np.shape(self.ws[i-1]))
+            # print("f",np.shape(f_derivative))
+            # print("delta_j*ws",np.shape(delta_j@(self.ws[i].T)))  
+
         for grad, w in zip(self.grads, self.ws):
             assert grad.shape == w.shape,\
                 f"Expected the same shape. Grad shape: {grad.shape}, w: {w.shape}."
@@ -109,7 +158,9 @@ def one_hot_encode(Y: np.ndarray, num_classes: int):
         Y: shape [Num examples, num classes]
     """
     # TODO: Implement this function (copy from last assignment)
-    raise NotImplementedError
+    newY=np.zeros((Y.shape[0],num_classes))
+    newY[np.arange(Y.shape[0]),Y[:,0]]=1
+    return newY
 
 
 def gradient_approximation_test(
@@ -159,9 +210,9 @@ def main():
         f"Expected X_train to have 785 elements per image. Shape was: {X_train.shape}"
 
     neurons_per_layer = [64, 10]
-    use_improved_sigmoid = True
-    use_improved_weight_init = True
-    use_relu = False
+    use_improved_sigmoid = False
+    use_improved_weight_init = False
+    use_relu = True
     model = SoftmaxModel(
         neurons_per_layer, use_improved_sigmoid, use_improved_weight_init, use_relu)
 

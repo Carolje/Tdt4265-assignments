@@ -16,7 +16,12 @@ def calculate_accuracy(X: np.ndarray, targets: np.ndarray, model: SoftmaxModel) 
         Accuracy (float)
     """
     # TODO: Implement this function (copy from last assignment)
-    accuracy = 0
+    y=model.forward(X)
+    preds=np.array([np.argmax(y,axis=1)]).T
+    preds=one_hot_encode(preds,targets.shape[1])
+    diff=np.sum(preds==targets,axis=1)
+    correct=diff[diff==preds.shape[1]]
+    accuracy=correct.shape[0]/targets.shape[0]
     return accuracy
 
 
@@ -32,7 +37,7 @@ class SoftmaxTrainer(BaseTrainer):
         self.momentum_gamma = momentum_gamma
         self.use_momentum = use_momentum
         # Init a history of previous gradients to use for implementing momentum
-        self.previous_grads = [np.zeros_like(w) for w in self.model.ws]
+        self.delta_w = [np.zeros_like(w) for w in self.model.ws]
 
     def train_step(self, X_batch: np.ndarray, Y_batch: np.ndarray):
         """
@@ -47,10 +52,18 @@ class SoftmaxTrainer(BaseTrainer):
             loss value (float) on batch
         """
         # TODO: Implement this function (task 2c)
-
-        loss = 0
-
-        loss = cross_entropy_loss(Y_batch, logits)  # sol
+        if not(self.model.ws):
+            self.model.ws=np.random.uniform(-1,1,(785,64))
+        y=self.model.forward(X_batch)
+        loss = cross_entropy_loss(Y_batch,y)
+        self.model.backward(X_batch,y,Y_batch)
+        for i in range(len(self.delta_w)):
+            if self.use_momentum:
+                self.delta_w[i]=self.model.grads[i]+self.momentum_gamma*self.delta_w[i]
+                self.model.ws[i]=self.model.ws[i] - self.learning_rate*self.delta_w[i]
+            else:
+                self.model.ws[i]=self.model.ws[i] - self.learning_rate*self.model.grads[i]
+        #y=self.model.forward(X_batch)
 
         return loss
 
@@ -87,9 +100,9 @@ def main():
     shuffle_data = True
 
     # Settings for task 2 and 3. Keep all to false for task 2.
-    use_improved_sigmoid = False
-    use_improved_weight_init = False
-    use_momentum = False
+    use_improved_sigmoid = True
+    use_improved_weight_init = True
+    use_momentum = True
     use_relu = False
 
     # Load dataset

@@ -22,6 +22,10 @@ def compute_loss_and_accuracy(
     """
     average_loss = 0
     accuracy = 0
+    loss = 0
+    num_correct=0
+    total_samples=0
+    count=0
     # TODO: Implement this function (Task  2a)
     with torch.no_grad():
         for (X_batch, Y_batch) in dataloader:
@@ -32,8 +36,14 @@ def compute_loss_and_accuracy(
             output_probs = model(X_batch)
 
             # Compute Loss and Accuracy
-
+            loss+=loss_criterion(output_probs,Y_batch).item()
+            count+=1
+            preds=output_probs.argmax(dim=1)
+            num_correct+=(preds==Y_batch).sum().item()
+            total_samples+=X_batch.shape[0]
             # Predicted class is the max index over the column dimension
+    average_loss=loss/count
+    accuracy=num_correct/total_samples
     return average_loss, accuracy
 
 
@@ -63,8 +73,10 @@ class Trainer:
         print(self.model)
 
         # Define our optimizer. SGD = Stochastich Gradient Descent
-        self.optimizer = torch.optim.SGD(self.model.parameters(),
-                                         self.learning_rate)
+        # self.optimizer = torch.optim.SGD(self.model.parameters(),
+        #                                  self.learning_rate)
+        self.optimizer = torch.optim.Adam(self.model.parameters(),
+                                        self.learning_rate,weight_decay=1e-5)
 
         # Load our dataset
         self.dataloader_train, self.dataloader_val, self.dataloader_test = dataloaders

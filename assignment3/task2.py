@@ -4,6 +4,7 @@ import utils
 from torch import nn
 from dataloaders import load_cifar10
 from trainer import Trainer
+from trainer import compute_loss_and_accuracy
 
 
 class ExampleModel(nn.Module):
@@ -29,18 +30,50 @@ class ExampleModel(nn.Module):
                 kernel_size=5,
                 stride=1,
                 padding=2
+            ),
+            nn.ReLU(),
+            nn.MaxPool2d(
+                kernel_size=2,
+                stride=2
+            ),
+            nn.Conv2d(
+                in_channels=num_filters,
+                out_channels=num_filters*2,
+                kernel_size=5,
+                stride=1,
+                padding=2
+            ),
+            nn.ReLU(),
+            nn.MaxPool2d(
+                kernel_size=2,
+                stride=2
+            ),
+            nn.Conv2d(
+                in_channels=num_filters*2,
+                out_channels=num_filters*4,
+                kernel_size=5,
+                stride=1,
+                padding=2
+            ),
+            nn.ReLU(),
+            nn.MaxPool2d(
+                kernel_size=2,
+                stride=2
             )
         )
         # The output of feature_extractor will be [batch_size, num_filters, 16, 16]
-        self.num_output_features = 32*32*32
+        self.num_output_features = 4*4*num_filters*4
         # Initialize our last fully connected layer
         # Inputs all extracted features from the convolutional layers
         # Outputs num_classes predictions, 1 for each class.
         # There is no need for softmax activation function, as this is
         # included with nn.CrossEntropyLoss
         self.classifier = nn.Sequential(
-            nn.Linear(self.num_output_features, num_classes),
+            nn.Linear(self.num_output_features, 64),
+            nn.ReLU(),
+            nn.Linear(64,10)
         )
+
 
     def forward(self, x):
         """
@@ -50,7 +83,9 @@ class ExampleModel(nn.Module):
         """
         # TODO: Implement this function (Task  2a)
         batch_size = x.shape[0]
-        out = x
+        out=self.feature_extractor(x)
+        out=out.view(-1,self.num_output_features)
+        out=self.classifier(out)
         expected_shape = (batch_size, self.num_classes)
         assert out.shape == (batch_size, self.num_classes),\
             f"Expected output of forward pass to be: {expected_shape}, but got: {out.shape}"
@@ -95,6 +130,12 @@ def main():
     )
     trainer.train()
     create_plots(trainer, "task2")
+    train_loss,train_acc=compute_loss_and_accuracy(trainer.dataloader_train,model,nn.CrossEntropyLoss())
+    val_loss,val_acc=compute_loss_and_accuracy(trainer.dataloader_val,model,nn.CrossEntropyLoss())
+    test_loss,test_acc=compute_loss_and_accuracy(trainer.dataloader_test,model,nn.CrossEntropyLoss())
+    print("Train accuracy", round(train_acc,3))
+    print("Validation accuracy", round(val_acc,3))
+    print("Test accuracy", round(test_acc,3))
 
 if __name__ == "__main__":
     main()

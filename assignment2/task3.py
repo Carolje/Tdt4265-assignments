@@ -7,7 +7,7 @@ from task2 import SoftmaxTrainer
 def main():
     # hyperparameters DO NOT CHANGE IF NOT SPECIFIED IN ASSIGNMENT TEXT
     num_epochs = 50
-    learning_rate = .1
+    learning_rate = .02
     batch_size = 32
     neurons_per_layer = [64, 10]
     momentum_gamma = .9  # Task 3 hyperparameter
@@ -41,7 +41,10 @@ def main():
     # For comparison, show all loss/accuracy curves in the same plot
     # YOU CAN DELETE EVERYTHING BELOW!
 
-    shuffle_data = False
+    shuffle_data = True
+    use_improved_weight_init=True
+    use_improved_sigmoid=True
+    use_momentum=True
 
     # Train a new model with new parameters
     model_no_shuffle = SoftmaxModel(
@@ -64,10 +67,10 @@ def main():
         train_history_no_shuffle["loss"], "Task 2 Model - No dataset shuffling", npoints_to_average=10)
     plt.ylim([0, .4])
     plt.subplot(1, 2, 2)
-    plt.ylim([0.85, .95])
+    plt.ylim([0.85, .99])
     utils.plot_loss(val_history["accuracy"], "Task 2 Model")
     utils.plot_loss(
-        val_history_no_shuffle["accuracy"], "Task 2 Model - No Dataset Shuffling")
+        val_history_no_shuffle["accuracy"], "Task 2 Model - Improved sigmoid")
     plt.ylabel("Validation Accuracy")
     plt.legend()
     plt.show()
