@@ -203,6 +203,7 @@ def test_mean_average_precision():
 
 
 if __name__ == "__main__":
+    np.random.seed(2)
     test_iou()
     test_precision()
     test_recall()
