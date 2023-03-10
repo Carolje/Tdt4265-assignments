@@ -16,11 +16,19 @@ def calculate_iou(prediction_box, gt_box):
             float: value of the intersection of union for the two boxes.
     """
     # YOUR CODE HERE
-
+    x_min=max(prediction_box[0],gt_box[0])
+    y_min=max(prediction_box[1],gt_box[1])
+    x_max=min(prediction_box[2],gt_box[2])
+    y_max=min(prediction_box[3],gt_box[3])
     # Compute intersection
+    intersection=abs(max(x_max-x_min,0)*max(y_max-y_min,0))
 
     # Compute union
-    iou = 0
+    prediction_box_area=abs((prediction_box[2]-prediction_box[0])*(prediction_box[3]-prediction_box[1]))
+    gt_box_area=abs((gt_box[2]-gt_box[0])*(gt_box[3]-gt_box[1]))
+    union=prediction_box_area+gt_box_area-intersection
+    
+    iou=intersection/union
     #END OF YOUR CODE
 
     assert iou >= 0 and iou <= 1
@@ -38,11 +46,9 @@ def calculate_precision(num_tp, num_fp, num_fn):
     Returns:
         float: value of precision
     """
-    # YOUR CODE HERE
-
-    #END OF YOUR CODE
-
-    raise NotImplementedError
+    precision=num_tp/(num_tp+num_fp)
+    return precision
+    
 
 
 def calculate_recall(num_tp, num_fp, num_fn):
@@ -55,11 +61,8 @@ def calculate_recall(num_tp, num_fp, num_fn):
     Returns:
         float: value of recall
     """
-    # YOUR CODE HERE
-
-    #END OF YOUR CODE
-
-    raise NotImplementedError
+    recall=num_tp/(num_tp+num_fn)
+    return recall
 
 
 def get_all_box_matches(prediction_boxes, gt_boxes, iou_threshold):
@@ -85,15 +88,35 @@ def get_all_box_matches(prediction_boxes, gt_boxes, iou_threshold):
     # YOUR CODE HERE
 
     # Find all possible matches with a IoU >= iou threshold
+    matches=np.zeros((np.shape(gt_boxes)[0],3))
 
+    for i in range(np.shape(prediction_boxes)[0]):
+        highest_iou=0
+        gt_box_index=0
+        for j in range(np.shape(gt_boxes)[0]):
+            iou=calculate_iou(prediction_boxes[i,],gt_boxes[j,])
+            if iou>highest_iou and iou>iou_threshold:
+                highest_iou=iou
+                gt_box_index=j
+        matches[gt_box_index,0]=gt_box_index
+        matches[gt_box_index,1]=i
+        matches[gt_box_index,2]=highest_iou
+        gt_boxes=np.delete(gt_boxes,gt_box_index,0)
 
     # Sort all matches on IoU in descending order
-
+    matches=matches[matches[:,2].argsort()]
+    matches=np.flipud(matches)
+    matches=matches[matches[:,2]>iou_threshold]
     # Find all matches with the highest IoU threshold
+    result_prediction_boxes=np.zeros((np.shape(matches)[0],4))
+    result_gt_boxes=np.zeros((np.shape(matches)[0],4))
+    for i in range(np.shape(matches)[0]):
+        result_gt_boxes[i,:]=gt_boxes[matches[i,0],:]
+        result_prediction_boxes[i,:]=prediction_boxes[matches[i,1],:]
 
 
 
-    return np.array([]), np.array([])
+    return np.array([result_prediction_boxes]), np.array([result_gt_boxes])
     #END OF YOUR CODE
 
 
@@ -116,11 +139,14 @@ def calculate_individual_image_result(prediction_boxes, gt_boxes, iou_threshold)
             {"true_pos": int, "false_pos": int, false_neg": int}
     """
     # YOUR CODE HERE
-
-
+    matched_pred_boxes,matched_gt_boxes=get_all_box_matches(prediction_boxes,gt_boxes,iou_threshold)
+    num_tp=np.shape(matched_gt_boxes)[0]
+    num_fp=np.shape(prediction_boxes)[0]-num_tp
+    num_fn=np.shape(gt_boxes)[0]-num_tp
+    
+    return({"true_pos":num_tp,"false_pos":num_fp,"false_neg":num_fn})
     #END OF YOUR CODE
 
-    raise NotImplementedError
 
 
 def calculate_precision_recall_all_images(
@@ -143,10 +169,18 @@ def calculate_precision_recall_all_images(
         tuple: (precision, recall). Both float.
     """
     # YOUR CODE HERE
-
+    precision=0
+    recall=0
+    for i in range(len(all_gt_boxes)):
+        Dict=calculate_individual_image_result(all_prediction_boxes[i],all_gt_boxes[i],iou_threshold)
+        precision+=calculate_precision(Dict["true_pos"],Dict["false_pos"],Dict["false_neg"])
+        recall+=calculate_recall(Dict["true_pos"],Dict["false_pos"],Dict["false_neg"])
+    precision=precision/len(all_gt_boxes)
+    recall=recall/len(all_gt_boxes)
+    result=(precision,recall)
+    return result
     #END OF YOUR CODE
 
-    raise NotImplementedError
 
 
 def get_precision_recall_curve(
