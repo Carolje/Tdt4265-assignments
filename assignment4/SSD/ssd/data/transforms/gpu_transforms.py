@@ -21,3 +21,17 @@ class ColorJitter(torchvision.transforms.ColorJitter):
     def forward(self, batch):
         batch["image"] = super().forward(batch["image"])
         return batch
+
+
+class RandomHorizontalFlip(torchvision.transforms.RandomHorizontalFlip):
+    @torch.no_grad()    
+    def forward(self, batch):
+        batch["image"] = super().forward(batch["image"])
+        return batch
+    
+class RandomRotation(torchvision.transforms.RandomRotation):
+    @torch.no_grad()    
+    def forward(self, batch):
+        batch["image"] = super().forward(batch["image"])
+        return batch
+

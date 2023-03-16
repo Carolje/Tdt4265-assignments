@@ -2,16 +2,17 @@ import torch
 from typing import Tuple, List
 
 
-class BasicModel(torch.nn.Module):
+class BasicModelAugmented(torch.nn.Module):
     """
     This is a basic backbone for SSD.
-    The feature extractor outputs a list of 6 feature maps, with the sizes:
-    [shape(-1, output_channels[0], 38, 38),
-     shape(-1, output_channels[1], 19, 19),
-     shape(-1, output_channels[2], 10, 10),
-     shape(-1, output_channels[3], 5, 5),
-     shape(-1, output_channels[3], 3, 3),
-     shape(-1, output_channels[4], 1, 1)]
+    The feature extractor outputs a list of 7 feature maps, with the sizes:
+    [shape(-1, output_channels[0], 75, 75),
+     shape(-1, output_channels[1], 38, 38),
+     shape(-1, output_channels[2], 19, 19),
+     shape(-1, output_channels[3], 10, 10),
+     shape(-1, output_channels[4], 5, 5),
+     shape(-1, output_channels[4], 3, 3),
+     shape(-1, output_channels[5], 1, 1)]
     """
     def __init__(self,
             output_channels: List[int],
@@ -45,7 +46,7 @@ class BasicModel(torch.nn.Module):
             torch.nn.Conv2d(in_channels=64,
                             out_channels=self.out_channels[0],
                             kernel_size=3,
-                            stride=2,
+                            stride=1,
                             padding=1),
             torch.nn.ReLU(),
             
@@ -68,12 +69,12 @@ class BasicModel(torch.nn.Module):
         self.feature_extractor_2=torch.nn.Sequential(
             torch.nn.ReLU(),
             torch.nn.Conv2d(in_channels=self.out_channels[1],
-                            out_channels=256,
+                            out_channels=128,
                             kernel_size=3,
                             stride=1,
                             padding=1),
             torch.nn.ReLU(),
-            torch.nn.Conv2d(in_channels=256,
+            torch.nn.Conv2d(in_channels=128,
                             out_channels=self.out_channels[2],
                             kernel_size=3,
                             stride=2,
@@ -83,12 +84,12 @@ class BasicModel(torch.nn.Module):
         self.feature_extractor_3=torch.nn.Sequential(
             torch.nn.ReLU(),
             torch.nn.Conv2d(in_channels=self.out_channels[2],
-                            out_channels=128,
+                            out_channels=256,
                             kernel_size=3,
                             stride=1,
                             padding=1),
             torch.nn.ReLU(),
-            torch.nn.Conv2d(in_channels=128,
+            torch.nn.Conv2d(in_channels=256,
                             out_channels=self.out_channels[3],
                             kernel_size=3,
                             stride=2,
@@ -121,6 +122,21 @@ class BasicModel(torch.nn.Module):
             torch.nn.Conv2d(in_channels=128,
                             out_channels=self.out_channels[5],
                             kernel_size=3,
+                            stride=2,
+                            padding=1),
+            torch.nn.ReLU()
+        )
+        self.feature_extractor_6=torch.nn.Sequential(
+            torch.nn.ReLU(),
+            torch.nn.Conv2d(in_channels=self.out_channels[5],
+                            out_channels=128,
+                            kernel_size=3,
+                            stride=1,
+                            padding=1),
+            torch.nn.ReLU(),
+            torch.nn.Conv2d(in_channels=128,
+                            out_channels=self.out_channels[6],
+                            kernel_size=3,
                             stride=1,
                             padding=0),
             torch.nn.ReLU()
@@ -129,12 +145,13 @@ class BasicModel(torch.nn.Module):
     def forward(self, x):
         """
         The forward functiom should output features with shape:
-            [shape(-1, output_channels[0], 38, 38),
-            shape(-1, output_channels[1], 19, 19),
-            shape(-1, output_channels[2], 10, 10),
-            shape(-1, output_channels[3], 5, 5),
-            shape(-1, output_channels[3], 3, 3),
-            shape(-1, output_channels[4], 1, 1)]
+            [shape(-1, output_channels[0], 76, 76),
+            shape(-1, output_channels[1], 38, 38),
+            shape(-1, output_channels[2], 19, 19),
+            shape(-1, output_channels[3], 10, 10),
+            shape(-1, output_channels[4], 5, 5),
+            shape(-1, output_channels[4], 3, 3),
+            shape(-1, output_channels[5], 1, 1)]
         We have added assertion tests to check this, iteration through out_features,
         where out_features[0] should have the shape:
             shape(-1, output_channels[0], 38, 38),
@@ -146,6 +163,7 @@ class BasicModel(torch.nn.Module):
         out_features.append(self.feature_extractor_3(out_features[2]))
         out_features.append(self.feature_extractor_4(out_features[3]))
         out_features.append(self.feature_extractor_5(out_features[4]))
+        out_features.append(self.feature_extractor_6(out_features[5]))
         for idx, feature in enumerate(out_features):
             out_channel = self.out_channels[idx]
             h, w = self.output_feature_shape[idx]

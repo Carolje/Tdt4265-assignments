@@ -60,6 +60,7 @@ class ExampleModel(nn.Module):
                 kernel_size=2,
                 stride=2
             )
+            
         )
         # The output of feature_extractor will be [batch_size, num_filters, 16, 16]
         self.num_output_features = 4*4*num_filters*4
