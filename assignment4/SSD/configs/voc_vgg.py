@@ -10,6 +10,7 @@ from ssd.data.transforms import (
 from .ssd300 import train, anchors, optimizer, schedulers, model, data_train, data_val, loss_objective
 from .utils import get_dataset_dir
 
+
 # Keep the model, except change the backbone and number of classes
 model.feature_extractor = L(backbones.VGG)()
 model.num_classes = 20 + 1

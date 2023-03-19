@@ -15,6 +15,8 @@ from tops.config import instantiate
 from tops import logger, checkpointer
 from torch.optim.lr_scheduler import ChainedScheduler
 torch.backends.cudnn.benchmark = True
+import os
+os.environ["PYTORCH_CUDA_ALLOC_CONF"] = "max_split_size_mb:256"
 
 def train_epoch(
         model, scaler: torch.cuda.amp.GradScaler,
